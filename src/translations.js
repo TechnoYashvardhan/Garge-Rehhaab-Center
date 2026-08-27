@@ -89,12 +89,12 @@ export const translations = {
     hoursText: "Monday – Saturday: 12:00 PM – 6:00 PM",
     hoursSun: "Sunday: Closed",
     socialLabel: "Follow Us",
-    mapLabel: "Open in Google Maps",
+    mapLabel: "Open in Google Maps →",
 
     footerTagline: "Empowering every child to reach their potential since 2005.",
     footerLinks: "Quick Links",
     footerContact: "Contact",
-    footerCopy: "© 2025 Garge Rehhaab Center. All rights reserved."
+    footerCopy: `© ${new Date().getFullYear()} Garge Rehhaab Center. All rights reserved.`
   },
   hi: {
     navHome: "होम",
@@ -186,11 +186,11 @@ export const translations = {
     hoursText: "सोमवार – शनिवार: दोपहर 12:00 – शाम 6:00 बजे",
     hoursSun: "रविवार: बंद",
     socialLabel: "हमें फॉलो करें",
-    mapLabel: "Google Maps पर खोलें",
+    mapLabel: "Google Maps पर खोलें →",
 
     footerTagline: "2005 से हर बच्चे को उनकी क्षमता तक पहुँचाना।",
     footerLinks: "त्वरित लिंक",
     footerContact: "संपर्क",
-    footerCopy: "© 2025 गार्गी रिहैब सेंटर। सर्वाधिकार सुरक्षित।"
+    footerCopy: `© ${new Date().getFullYear()} गार्गी रिहैब सेंटर। सर्वाधिकार सुरक्षित।`
   }
 };

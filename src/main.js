@@ -2,48 +2,105 @@ import { translations } from './translations.js';
 
 // Mark body so CSS hides animate-on-scroll elements (fallback: visible without JS)
 document.documentElement.classList.add('js-loaded');
-document.body.classList.add('js-ready');
-
+if (document.body) {
+  document.body.classList.add('js-ready');
+} else {
+  document.addEventListener('DOMContentLoaded', () => {
+    document.body.classList.add('js-ready');
+  });
+}
 
 document.addEventListener('DOMContentLoaded', () => {
+  if (!document.body.classList.contains('js-ready')) {
+    document.body.classList.add('js-ready');
+  }
 
-  // ── i18n ──
+  // ── i18n (Internationalization) ──
   const updateLanguage = (lang) => {
+    const validLang = translations[lang] ? lang : 'en';
+    document.documentElement.lang = validLang;
+    
     document.querySelectorAll('[data-i18n]').forEach((el) => {
       const key = el.getAttribute('data-i18n');
-      if (translations[lang]?.[key] !== undefined) {
-        el.textContent = translations[lang][key];
+      if (translations[validLang]?.[key] !== undefined) {
+        el.textContent = translations[validLang][key];
       }
     });
-    document.getElementById('lang-en').classList.toggle('active', lang === 'en');
-    document.getElementById('lang-hi').classList.toggle('active', lang === 'hi');
+
+    const btnEn = document.getElementById('lang-en');
+    const btnHi = document.getElementById('lang-hi');
+    if (btnEn) btnEn.classList.toggle('active', validLang === 'en');
+    if (btnHi) btnHi.classList.toggle('active', validLang === 'hi');
+
+    try {
+      localStorage.setItem('grc_lang', validLang);
+    } catch {
+      // localStorage may be disabled in private browsing
+    }
   };
-  document.getElementById('lang-en').addEventListener('click', () => updateLanguage('en'));
-  document.getElementById('lang-hi').addEventListener('click', () => updateLanguage('hi'));
-  updateLanguage('en');
+
+  const btnEn = document.getElementById('lang-en');
+  const btnHi = document.getElementById('lang-hi');
+  if (btnEn) btnEn.addEventListener('click', () => updateLanguage('en'));
+  if (btnHi) btnHi.addEventListener('click', () => updateLanguage('hi'));
+
+  // Load saved or default language
+  let initialLang = 'en';
+  try {
+    const saved = localStorage.getItem('grc_lang');
+    if (saved && (saved === 'en' || saved === 'hi')) initialLang = saved;
+  } catch {
+    // fallback to 'en'
+  }
+  updateLanguage(initialLang);
 
   // ── Navbar scroll ──
   const navbar = document.getElementById('navbar');
-  window.addEventListener('scroll', () => {
-    navbar.classList.toggle('scrolled', window.scrollY > 60);
-  }, { passive: true });
+  if (navbar) {
+    window.addEventListener('scroll', () => {
+      navbar.classList.toggle('scrolled', window.scrollY > 60);
+    }, { passive: true });
+  }
 
   // ── Hamburger mobile menu ──
   const hamburger = document.getElementById('hamburger');
   const mobileMenu = document.getElementById('mobileMenu');
-  hamburger.addEventListener('click', () => {
-    mobileMenu.classList.toggle('open');
-  });
-  mobileMenu.querySelectorAll('a').forEach(link => {
-    link.addEventListener('click', () => mobileMenu.classList.remove('open'));
-  });
+
+  const closeMobileMenu = () => {
+    if (mobileMenu) mobileMenu.classList.remove('open');
+    if (hamburger) {
+      hamburger.classList.remove('open');
+      hamburger.setAttribute('aria-expanded', 'false');
+    }
+    document.body.classList.remove('menu-open');
+  };
+
+  const toggleMobileMenu = () => {
+    if (!mobileMenu || !hamburger) return;
+    const isOpen = mobileMenu.classList.toggle('open');
+    hamburger.classList.toggle('open', isOpen);
+    hamburger.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    document.body.classList.toggle('menu-open', isOpen);
+  };
+
+  if (hamburger) {
+    hamburger.setAttribute('aria-expanded', 'false');
+    hamburger.addEventListener('click', toggleMobileMenu);
+  }
+
+  if (mobileMenu) {
+    mobileMenu.querySelectorAll('a').forEach((link) => {
+      link.addEventListener('click', closeMobileMenu);
+    });
+  }
 
   // ── Counter animation ──
   const animateCounter = (el) => {
     const target = +el.getAttribute('data-target');
+    if (isNaN(target)) return;
     const duration = 1800;
     const intervalTime = target <= 10 ? 150 : target <= 20 ? 100 : 25;
-    const increment = Math.ceil(target / (duration / intervalTime));
+    const increment = Math.max(1, Math.ceil(target / (duration / intervalTime)));
     let current = 0;
     const timer = setInterval(() => {
       current = Math.min(current + increment, target);
@@ -68,24 +125,52 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.querySelectorAll('.animate-on-scroll').forEach(el => observer.observe(el));
 
-  // ── Year ──
-  const yearEl = document.getElementById('year');
-  if (yearEl) yearEl.textContent = new Date().getFullYear();
+  // ── Keyboard support for certificate thumbnails ──
+  document.querySelectorAll('.cert-thumb').forEach(thumb => {
+    thumb.setAttribute('tabindex', '0');
+    thumb.setAttribute('role', 'button');
+    thumb.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        window.openLightbox(thumb);
+      }
+    });
+  });
 });
 
 // ── Certificate Lightbox ── (global functions for inline onclick)
 window.openLightbox = function(thumb) {
   const lb = document.getElementById('lightbox');
   const img = document.getElementById('lightbox-img');
-  img.src = thumb.querySelector('img').src;
-  img.alt = thumb.querySelector('img').alt;
+  if (!lb || !img) return;
+  const thumbImg = thumb.querySelector('img');
+  if (thumbImg) {
+    img.src = thumbImg.src;
+    img.alt = thumbImg.alt;
+  }
   lb.classList.add('open');
-  document.body.style.overflow = 'hidden';
+  document.body.classList.add('lightbox-open');
 };
+
 window.closeLightbox = function() {
-  document.getElementById('lightbox').classList.remove('open');
-  document.body.style.overflow = '';
+  const lb = document.getElementById('lightbox');
+  if (lb) lb.classList.remove('open');
+  document.body.classList.remove('lightbox-open');
 };
+
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') window.closeLightbox();
+  if (e.key === 'Escape') {
+    window.closeLightbox();
+    const mobileMenu = document.getElementById('mobileMenu');
+    const hamburger = document.getElementById('hamburger');
+    if (mobileMenu && mobileMenu.classList.contains('open')) {
+      mobileMenu.classList.remove('open');
+      if (hamburger) {
+        hamburger.classList.remove('open');
+        hamburger.setAttribute('aria-expanded', 'false');
+      }
+      document.body.classList.remove('menu-open');
+    }
+  }
 });
+
