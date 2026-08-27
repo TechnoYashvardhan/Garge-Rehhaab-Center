@@ -1,3 +1,4 @@
+import './style.css';
 import { translations } from './translations.js';
 
 // Mark body so CSS hides animate-on-scroll elements (fallback: visible without JS)
